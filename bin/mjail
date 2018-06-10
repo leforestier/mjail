@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+
+"""Minimalist command line tool to manage FreeBSD jails
+
+Usage:
+    mjail init [--ip4-network <ip4_network>]
+    mjail create <jail_name> [--no-start]
+    mjail create <jail_name> --ssh-box <public_key> port <host_port> [--no-start]
+    mjail set-up-sshd <jail_name> <public_key> port <host_port>
+    mjail delete <jail_name> [--no-confirm]
+    mjail exec <jail_name> <command> [<arguments>...]
+    mjail shell <jail_name> [<shell_path>]
+    mjail freebsd-update <jail_name> [--no-confirm]
+    mjail freebsd-update <jail_name> -r <to_version> [--no-confirm]
+    mjail rdr (tcp|udp) <internet_facing_host_port> to <jail_name> <jail_port>
+    mjail cancel-rdr (tcp|udp) <internet_facing_host_port>
+    mjail start <jail_name>
+    mjail stop <jail_name>
+"""
+
+import docopt
+from ipaddress import ip_network
+from mjail.commands import init, Jail
+from mjail.services import PFManager
+import sys
+
+if __name__ == '__main__':
+    args = docopt.docopt(__doc__)
+    jail_name = args['<jail_name>']
+    if args['init']:
+        if args['--ip4-network']:
+            ip4_network = args['<ip4_network>']
+        else:
+            ip4_network = '10.240.0.0/12'
+        init(ip4_network = ip_network(ip4_network))
+    elif args['create']:
+        jail = Jail(jail_name)
+        jail.create()
+        jail.assign_ip4()
+        if args['--ssh-box']:
+            jail.ssh_box(args['<public_key>'], args['<host_port>'])
+        if not args['--no-start']:
+            jail.start()
+    elif args['delete']:
+        jail = Jail(jail_name)
+        if (
+            args['--no-confirm']
+            or
+            input("Delete jail %s and all its data? yes/no " % jail.name) == 'yes'
+        ):
+            jail.delete()
+    elif args['shell']:
+        Jail(jail_name).shell(args['<shell_path>'])
+    elif args['exec']:
+        Jail(jail_name).execute(args['<command>'], *args['<arguments>'])
+    elif args['freebsd-update']:
+        if args['-r']:
+            Jail(jail_name).minor_upgrade(args['<to_version>'], unattended = bool(args['--no-confirm']))
+        else:
+            Jail(jail_name).freebsd_update(unattended = bool(args['--no-confirm']))
+    elif args['rdr']:
+        proto = next(x for x in ('tcp', 'udp') if args[x])
+        Jail(jail_name).rdr(proto, args['<internet_facing_host_port>'], args['<jail_port>'])
+    elif args['cancel-rdr']:
+        proto = next(x for x in ('tcp', 'udp') if args[x])
+        Jail.cancel_rdr(proto, args['<internet_facing_host_port>'])
+    elif args['set-up-sshd']:
+        jail = Jail(jail_name)
+        jail.ssh_box(args['<public_key>'], args['<host_port>'])
+        jail.execute('service', 'sshd', 'start')
+    elif args['start']:
+        Jail(jail_name).start()
+    elif args['stop']:
+        Jail(jail_name).stop()
+    
+        
+        
+            
+        
