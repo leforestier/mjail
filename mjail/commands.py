@@ -8,6 +8,7 @@ from mjail.jails_network import jails_network4
 from mjail.sshd_conf import SSHDConf
 import os, os.path
 import re
+import shutil
 from subprocess import CalledProcessError
 from tempfile import TemporaryDirectory
 
@@ -266,7 +267,7 @@ class Jail(object):
         if line not in lines:
             lines.append(line)
         temp_etc_hosts = to_tempfile(''.join(lines))
-        os.rename(temp_etc_hosts, '/etc/hosts')
+        shutil.move(temp_etc_hosts, '/etc/hosts')
         
     def assign_ip4(self):
         self.set_ip4(available_ip4())
@@ -288,7 +289,7 @@ class Jail(object):
                 line = '%s %s\n' % (ip4, self.name)
                 lines = [l for l in open('/etc/hosts').readlines() if l != line]
                 temp_etc_hosts = to_tempfile(''.join(lines))
-                os.rename(temp_etc_hosts, '/etc/hosts')    
+                shutil.move(temp_etc_hosts, '/etc/hosts')    
             del jail_conf[self.name]
             jail_conf.write('/etc/jail.conf')
             
