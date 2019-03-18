@@ -193,10 +193,11 @@ you can create a jail that's accessible via ssh over a port of your choice issui
 .. code::
 
     # mjail create cooljail --ssh-box "$MY_PUBLIC_KEY" port 4444
-    
-**Important warning: don't choose the same ssh port as the port of the host or you'll be into trouble: you'd lose access to the host.**
-    
+     
 Note that the jail is not facing the internet directly. `mjail` just instructs the `pf` firewall to redirect the ssh traffic over the port of your choice to the ssh daemon running inside the jail.
+
+Don't choose the same ssh port for your jail as the ssh port of the host. *mjail* wouldn't allow it since it would make you lose access to the host!
+
     
 Then you can access your jail just like it was a new dedicated server.
 
