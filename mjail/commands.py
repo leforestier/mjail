@@ -89,10 +89,13 @@ class Release(object):
         return os.path.exists(os.path.join(self.directory, 'bin/echo'))
         
     def build(self):
+        components = ['base.txz', 'lib32.txz']
+        if int(re.match(r'^\d+', self._release).group(0)) < 12: # There's no longer a doc.txz in FreeBSD 12
+            components.append('doc.txz')
         cmd('mkdir', '-p', self.directory)
         with TemporaryDirectory() as tempdir:
             with cd(tempdir):
-                for component in ('base.txz', 'lib32.txz', 'doc.txz'):
+                for component in components:
                     cmd('fetch', self._component_url(component), '-o', component)
                     cmd('tar', 'xvf', component, '-C', self.directory)
                 freebsd_update(self.directory, unattended = True)
