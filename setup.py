@@ -5,15 +5,15 @@ with open('README.rst') as fd:
 
 setup(
     name='mjail',
-    version='0.1.1',
-    install_requires = ['docopt>=0.6.2', 'jailconf>=0.2.0'],
+    version='0.2.0',
+    install_requires = ['docopt>=0.6.2', 'jailconf>=0.2.1'],
     packages=['mjail'],
     scripts=['bin/mjail'],
     author = 'Benjamin Le Forestier',
     author_email = 'benjamin@leforestier.org',
     url = 'https://github.com/leforestier/mjail',
     keywords = ["jail", "freebsd", "jail.conf"],
-    description = "Minimalist command line tool to manage FreeBSD jails",
+    description = "Command line tool to create and manage FreeBSD jails",
     long_description = long_description,
     classifiers = [
         "Intended Audience :: System Administrators",
@@ -26,6 +26,6 @@ setup(
         'Operating System :: POSIX :: BSD :: FreeBSD',
         'Topic :: System :: Operating System',
         'Topic :: System :: Systems Administration'
-       
-    ]  
+
+    ]
 )
