@@ -4,13 +4,13 @@ mjail
 
 *mjail* is a command line tool to create and manage jails on FreeBSD.
 
-With *mjail*, you can create a jail in a single command and have a virtual machine ready to work with. 
+With *mjail*, you can create a jail in a single command and have a virtual machine ready to work with.
 
-For example, you can use *mjail* to create multiple independant ssh boxes on your remote server, and then be able to access them from your laptop, in the same way you'd access any Unix host, using ssh and a private key. 
+For example, you can use *mjail* to create multiple independant ssh boxes on your remote server, and then be able to access them from your laptop, in the same way you'd access any Unix host, using ssh and a private key.
 
 *mjail* integrates with the *pf* firewall to allow quick management of port redirections to the jails.
 
-*mjail* relies on ``jail.conf`` and so is compatible with the newest versions of FreeBSD. 
+*mjail* relies on ``jail.conf`` and so is compatible with the newest versions of FreeBSD.
 
 --------
 Features
@@ -25,20 +25,6 @@ Each of these features can be achieved by issuing a single `mjail` command.
 - start a shell inside a jail
 - update the base system of a jail
 - redirect any internet facing port of the host to a port of a jail
-
-
-*mjail* is a work in progress and, although I've been using it for my personal use for a few years, the project is still at its beginning and lacks some important features.
-
---------------------
-Features coming soon
---------------------
-
-(`help if you can!
-<https://github.com/leforestier/mjail>`_)
-
-- IPv6 support: this is the priority. For now the jail network on the host is IPv4 only.
-- have a special jail that would act as a pkg mirror and/or a ports mirror (currently, jails manage their packages and ports in a totally independant way, I want to keep it that way while avoiding unnessary downloads from the FreeBSD infrastructure).
-- zfs: mjail takes no advantage of zfs. To create jails, it just recursively copies directory trees from the file system. It would be good to have the possibility to use zfs to create and/or make snapshots of jails. I just don't jave the zfs knowledge required to do that at the moment.
 
 -------------
 Installation
@@ -63,9 +49,9 @@ Then install *py36-pip*, which is the python module manager for python 3 (here f
 Finally you can install mjail. Run, as root:
 
 .. code::
-    
+
     pip-3.6 install mjail
-    
+
 ---------------
 Initialization
 ---------------
@@ -75,19 +61,20 @@ Before creating your first jail, you must initialize your system. This is a simp
 .. code::
 
    mjail init
-    
+
 This will, among other things, create a local virtual network interface ``lo8`` on your host for use by the jails.
-By default, the ``10.240.0.0/12`` ip range is used for the jails.
-If for some reason you want to use a different ip range, you can specify it using the ``--ip4-network`` option.
+By default, the ``10.240.0.0/12`` IPv4 range, and a randomly generated IPv6 site local network, are used for the jails.
+
+If you want to use a different IPv4 range, you can specify it using the ``--ip4-network`` option.
+If you want to use a different IPv6 range, you can specify it using the ``--ip6-network`` option.
 
 The preceding command was equivalent to:
 
 .. code::
-    
+
     mjail init --ip4-network 10.240.0.0/12
-    
-*mjail* doesn't deal with IPv6 at the moment, but this should be implemented soon.
-    
+
+
 -----------------------------
 Jails creation and management
 -----------------------------
@@ -99,7 +86,19 @@ Create a jail
 
     mjail create cooljail
 
-This automatically gives this jail an ip address and it automatically starts the jail. The name of this jail is "cooljail". You will be able to use this name later on to stop the jail, start it or delete it for example. This is also the hostname of the jail.
+This automatically gives the jail an IPv4 address and an IPv6 address in the local jail network, and it automatically starts the jail. The name of this jail is "cooljail". You will be able to use this name later on to stop the jail, start it or delete it for example. This is also the hostname of the jail.
+
+If you want your jail to have an IPv4 address but no IPv6 address, use:
+
+.. code::
+
+    mjail create cooljail4 --ip4-only
+
+If you want your jail to have an IPv6 address but not IPv4 address, use:
+
+.. code::
+
+    mjail create cooljail6 --ip6-only
 
 You can check the list of jails that are currently running:
 
@@ -108,28 +107,41 @@ You can check the list of jails that are currently running:
     jls
 
     JID  IP Address      Hostname                      Path
-    2   10.240.0.2       cooljail                     /var/mjail/instances/cooljail
+    2    10.240.0.2      cooljail                     /var/mjail/instances/cooljail
+    3    10.240.0.3      cooljail4                    /var/mjail/instances/cooljail4
+    4                    cooljail6                    /var/mjail/instances/cooljail6
+
+To check what IPv6 addresses have been assigned to your jails, use:
+
+.. code::
+
+    jls -v host.hostname ip6.addr
+
+    cooljail fd48:6132:e79f:4124::2
+    cooljail4 -
+    cooljail6 fd48:6132:e79f:4124::3
+
 
 If you don't want the jail to start immediately, use the ``--no-start`` option:
 
 .. code:: sh
 
     mjail create cooljail --no-start
-    
+
 Stop a jail
 ------------
 
 .. code::
 
     mjail stop cooljail
-    
+
 Delete a jail
 --------------
 
 .. code::
 
     mjail delete uncooljail
-    
+
 Start a jail
 ------------
 
@@ -138,20 +150,20 @@ If you have stopped a jail, or if you have created one using the ``--no-start`` 
 .. code::
 
     mjail start cooljail
-    
+
 Execute a command inside a jail
 -------------------------------
 
 .. code::
 
     mjail exec <jail_name> <command> [<arguments>...]
-    
+
 For example:
 
 .. code::
 
     mjail exec cooljail cat /var/log/nginx/access.log
-    
+
 
 Start a shell inside the jail
 ------------------------------
@@ -159,11 +171,11 @@ Start a shell inside the jail
 .. code::
 
     # mjail shell cooljail
-    
+
     root@cooljail:/ # echo "I'm inside the jail"
     I'm inside the jail
 
-    
+
 Create a jail that's accessible via ssh
 ---------------------------------------
 
@@ -172,15 +184,15 @@ For that you'll need a public/private ssh key pair. If you don't have one alread
 .. code:: sh
 
     $ ssh-keygen -f my-cool-key
-    
+
 You'll get two files. The private key is contained in ``my-cool-key`` and the public key is contained in ``my-cool-key.pub``.
 
 .. code:: sh
 
     $ cat my-coolkey.pub
-    
+
     ssh-rsa AAAAB3N...G7xAQt4LpCaEh/D+UpoChnJOXKV9 user@host
-    
+
 
 Assuming your public key looks like this,
 
@@ -193,18 +205,18 @@ you can create a jail that's accessible via ssh over a port of your choice issui
 .. code::
 
     # mjail create cooljail --ssh-box "$MY_PUBLIC_KEY" port 4444
-     
+
 Note that the jail is not facing the internet directly. `mjail` just instructs the `pf` firewall to redirect the ssh traffic over the port of your choice to the ssh daemon running inside the jail.
 
 Don't choose the same ssh port for your jail as the ssh port of the host. *mjail* wouldn't allow it since it would make you lose access to the host!
 
-    
+
 Then you can access your jail just like it was a new dedicated server.
 
 .. code::
 
     ssh -p 4444 root@xx.xx.xx.xx
-    
+
 where xx.xx.xx.xx is the ip address of your host.
 
 That's assuming you've added your ssh private key to the ssh-agent on your laptop using ``ssh-add``.
@@ -213,7 +225,7 @@ If not, just use:
 .. code::
 
     ssh -i /path/to/my-cool-key -p 4444 root@xx.xx.xx.xx
-    
+
 
 Adding ssh access to a jail
 ----------------------------
@@ -223,12 +235,12 @@ If you created a jail using a simple ``mjail create myjail`` command, it has no 
 .. code::
 
     mjail set-up-sshd <jail_name> <public_key> port <host_port>
-    
+
 where:
     - ``<jail_name>`` is, well, the name of the jail
     - ``<public_key>`` is your public key as a string (for example ``'ssh-rsa AAAAB3N...G7xAQt4LpCaEh/D+UpoChnJOXKV9 user@host'``). If you generated your key using ``ssh-keygen`` it's the content of your ``key.pub`` file.
     - ``<host_port>``: the port of the host that you will connect to in order to connect to the ssh-daemon of the jail. Use a non common port, for exemple 4444. **Never use the same ssh port as the ssh port of the host or you'll lose ssh access to the host**.
-    
+
 
 Redirect an internet facing port from the host to a jail
 --------------------------------------------------------
@@ -244,25 +256,25 @@ This can be done using the command:
 .. code::
 
     mjail rdr tcp 80 to cooljail 80
-    
-The general form of this command is 
+
+The general form of this command is
 
 .. code::
 
     mjail rdr (tcp|udp) <internet_facing_host_port> to <jail_name> <jail_port>
-    
+
 Of course, the ports don't need to be the same on the host and on the jail. If, for example, inside the jail you're running a Tornado web application on port 8080 and want to make it public on port 80 of the host, you'd issue a:
 
 .. code::
 
     mjail rdr tcp 80 to cooljail 8080
-    
+
 You can cancel the redirection by running:
 
 .. code::
 
     mjail cancel-rdr tcp 80
-    
+
 Packages
 ---------
 
@@ -281,13 +293,13 @@ To update the base system of a jail with the latest security patches:
 .. code::
 
     mjail freebsd-update <jail_name>
-    
+
 Sometimes, it's required to upgrade to a new FreeBSD version because the one you're running no longer receives security patches. You can do that with:
 
 .. code::
-    
+
     mjail freebsd-update <jail_name> -r <to_version>
-    
+
 For example, if your jail is running FreeBSD 11.1, you can upgrade to 11.2
 
 .. code::

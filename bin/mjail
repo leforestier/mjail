@@ -3,9 +3,9 @@
 """Minimalist command line tool to manage FreeBSD jails
 
 Usage:
-    mjail init [--ip4-network <ip4_network>]
-    mjail create <jail_name> [--no-start]
-    mjail create <jail_name> --ssh-box <public_key> port <host_port> [--no-start]
+    mjail init [--ip4-network <ip4_network>] [--ip6-network <ip6_network>]
+    mjail create <jail_name> [--no-start] [--ip4-only] [--ip6-only]
+    mjail create <jail_name> --ssh-box <public_key> port <host_port> [--no-start] [--no-ip4] [--no-ip6]
     mjail set-up-sshd <jail_name> <public_key> port <host_port>
     mjail delete <jail_name> [--no-confirm]
     mjail exec <jail_name> <command> [<arguments>...]
@@ -17,12 +17,18 @@ Usage:
     mjail start <jail_name>
     mjail stop <jail_name>
 """
-
+import binascii
 import docopt
-from ipaddress import ip_network
+from ipaddress import IPv4Network, IPv6Network
 from mjail.commands import init, Jail
-from mjail.services import PFManager
+import random
 import sys
+
+def exit_error(error_message, error_code = 1):
+    sys.stderr.write(error_message)
+    sys.stderr.write('\n')
+    sys.stderr.flush()
+    sys.exit(error_code)
 
 if __name__ == '__main__':
     args = docopt.docopt(__doc__)
@@ -32,11 +38,31 @@ if __name__ == '__main__':
             ip4_network = args['<ip4_network>']
         else:
             ip4_network = '10.240.0.0/12'
-        init(ip4_network = ip_network(ip4_network))
+        if args['--ip6-network']:
+             ip6_network = args['<ip6_network>']
+        else:
+            subnet_id = binascii.hexlify(
+                bytes(bytearray(random.randint(0,255) for _ in range(7)))
+            ).decode('ascii')
+            ip6_string = 'fd' + subnet_id + '0000'*4
+            ip6_network = (
+                ':'.join(ip6_string[i:i+4] for i in range(0, len(ip6_string), 4))
+                +
+                '/64'
+            )
+        init(
+            ip4_network = IPv4Network(ip4_network),
+            ip6_network = IPv6Network(ip6_network)
+        )
     elif args['create']:
+        if args.get('--ip4-only') and args.get('--ip6-only'):
+            exit_error("You can't specify both --ip4-only and --ip6-only.")
         jail = Jail(jail_name)
         jail.create()
-        jail.assign_ip4()
+        if not args.get('--ip6-only'):
+            jail.assign_ip4()
+        if not args.get('--ip4-only'):
+            jail.assign_ip6()
         if args['--ssh-box']:
             jail.ssh_box(args['<public_key>'], args['<host_port>'])
         if not args['--no-start']:
@@ -72,8 +98,3 @@ if __name__ == '__main__':
         Jail(jail_name).start()
     elif args['stop']:
         Jail(jail_name).stop()
-    
-        
-        
-            
-        
