@@ -5,7 +5,7 @@
 Usage:
     mjail init [--ip4-network <ip4_network>] [--ip6-network <ip6_network>]
     mjail create <jail_name> [--no-start] [--ip4-only] [--ip6-only]
-    mjail create <jail_name> --ssh-box <public_key> port <host_port> [--no-start] [--no-ip4] [--no-ip6]
+    mjail create <jail_name> --ssh-box <public_key> port <host_port> [--no-start] [--ip4-only] [--ip6-only]
     mjail set-up-sshd <jail_name> <public_key> port <host_port>
     mjail delete <jail_name> [--no-confirm]
     mjail exec <jail_name> <command> [<arguments>...]
