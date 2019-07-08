@@ -5,7 +5,7 @@ with open('README.rst') as fd:
 
 setup(
     name='mjail',
-    version='0.2.0',
+    version='0.3.0',
     install_requires = ['docopt>=0.6.2', 'jailconf>=0.2.1'],
     packages=['mjail'],
     scripts=['bin/mjail'],
